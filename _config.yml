@@ -1,8 +1,44 @@
 #Jekyll configuration
-name: Xingjian Xuanyuan's web pages
-theme: jekyll-theme-minimal
+
 title: Xingjian's homepage
-description: Tao is to the world what rivers are to the ocean.
+
+email: xingjian.tsinghua@gmail.com
+
+description: >- # this means to ignore newlines until "baseurl:"
+  Tao is to the world what rivers are to the ocean.
+
+baseurl: ""
 url: "https://XingjianXuanyuan.github.io"
-markdown: GFM
-highlighter: rouge
+github_username: XingjianXuanyuan
+
+#Build settings
+remote_theme: pmarsceill/just-the-docs
+
+# Enable or disable the site search
+search_enabled: true
+
+# Aux links for upper right navigation link
+aux_links:
+  "Go to Github profile >":
+    - "https://github.com/XingjianXuanyuan"
+
+# Inlucde pages into processing
+include: ["_pages", "_posts"]
+
+# Footer content appears at the bottom of every page's main content
+footer_content: "Copyright &copy; 2022 XingjianXuanyuan. Distributed under the <a href=\"https://github.com/XingjianXuanyuan/xingjianxuanyuan.github.io/tree/master/LICENSE\">MIT license</a>."
+
+# Heading anchor links appear on hover over h1-h6 tags in page content
+heading_anchors: true
+
+# Google Analytics Tracking (optional)
+# ga_tracking:
+
+#Includes an icon in the footer for each user name
+# footer-links:
+  # github: XingjianXuanyuan
+  # permalink: /:title/
+
+# Exclude from processing.
+# exclude:
+  # - Gemfile
