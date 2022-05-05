@@ -11,11 +11,19 @@ baseurl: ""
 url: "https://XingjianXuanyuan.github.io"
 github_username: XingjianXuanyuan
 
+#URL structure
+permalink: /:title
+
+markdown: GFM
+
 #Build settings
 remote_theme: pmarsceill/just-the-docs
 
 # Enable or disable the site search
 search_enabled: true
+
+# --- Navigation bar options --- #
+# List of links in the navigation bar
 
 # Aux links for upper right navigation link
 aux_links:
