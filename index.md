@@ -1,6 +1,10 @@
 ---
-layout: default
+layout: home
+title: "Home"
+nav_order: 1
 ---
+# Xingjian Xuanyuan
+譬大道之在天下猶川谷之於江海
 
 <div class="posts">
   {% for post in site.posts %}
