@@ -1,3 +1,8 @@
+#Jekyll configuration
+name: Xingjian Xuanyuan's web pages
 theme: jekyll-theme-minimal
 title: Xingjian's homepage
 description: Tao is to the world what rivers are to the ocean.
+url: "https://XingjianXuanyuan.github.io"
+markdown: GFM
+highlighter: rouge
