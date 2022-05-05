@@ -9,7 +9,7 @@ permalink:        pretty
 title:            Xingjian Xuanyuan
 tagline:          'Personal Website'
 description:      'Tao is to the world what rivers are to the ocean.'
-baseurl:          https://github.com/XingjianXuanyuan/XingjianXuanyuan.github.io
+baseurl:          /
 
 # Gems
 plugins:
