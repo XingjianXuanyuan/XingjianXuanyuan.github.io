@@ -2,7 +2,7 @@
   <div class="container sidebar-sticky">
     <div class="sidebar-about">
       <h1>
-        <a href="{{ site.author.url }}">
+        <a href="{{ site.baseurl }}">
           {{ site.title }}
         </a>
       </h1>
@@ -26,7 +26,7 @@
         {% endif %}
       {% endfor %}
 
-      <a class="sidebar-nav-item" href="{{ site.github.repo }}/_posts/">Blog Posts</a>
+      <a class="sidebar-nav-item" href="{{ site.github.repo }}_posts/">Blog Posts</a>
       <a class="sidebar-nav-item" href="{{ site.author.url }}">Projects</a>
       <span class="sidebar-nav-item">Currently v{{ site.version }}</span>
     </nav>
