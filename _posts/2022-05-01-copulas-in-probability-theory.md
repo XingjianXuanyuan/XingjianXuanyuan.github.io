@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Copulas in Probability Theory
+title: "Copulas in Probability Theory"
 ---
 
 ## Basic Concepts
