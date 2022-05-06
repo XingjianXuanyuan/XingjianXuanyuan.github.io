@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Tree Data Structures in the Linux Kernel"
-categories: "Computing Systems"
+category: "Computing Systems"
 ---
 
 <h2>Radix Tree</h2>
