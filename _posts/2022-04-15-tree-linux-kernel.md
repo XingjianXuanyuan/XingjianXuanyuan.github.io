@@ -9,7 +9,7 @@ category: "Computing Systems"
 * TOC 
 {:toc}
 
-<h2>Radix Tree</h2>
+## Radix Tree
 
 Linux's radix tree implementation lives in the file [<code>lib/radix-tree.c</code>](https://elixir.bootlin.com/linux/v5.4.42/source/lib/radix-tree.c). To use it,
 
@@ -17,7 +17,7 @@ Linux's radix tree implementation lives in the file [<code>lib/radix-tree.c</cod
 #include <linux/radix-tree.h>
 ~~~
 
-<h2>Red-Black Tree</h2>
+## Red-Black Tree
 
 **Definition 1.** A **read-black tree**{: style="color: red"} is a binary search tree which has the following *red-black properties*:
 1. Every node is either red or black.
