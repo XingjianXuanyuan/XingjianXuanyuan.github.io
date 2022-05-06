@@ -1,7 +1,7 @@
 # Dependencies
 markdown:         kramdown
-mathjax:          true
 highlighter:      pygments
+mathjax:          true
 
 # Permalinks
 permalink:        pretty
