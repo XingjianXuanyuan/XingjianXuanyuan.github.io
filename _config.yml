@@ -1,7 +1,8 @@
-# Dependencies
-markdown:         kramdown
-highlighter:      pygments
-mathjax:          true
+# Build settings
+markdown:           kramdown
+highlighter:        pygments
+excerpt_separator:  <!-- excerpt-end -->
+mathjax:            true
 
 # Permalinks
 permalink:        pretty

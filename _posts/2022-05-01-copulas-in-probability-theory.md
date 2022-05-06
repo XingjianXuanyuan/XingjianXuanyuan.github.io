@@ -7,6 +7,8 @@ title: "Copulas in Probability Theory"
 
 The term "Copula" was first introduced by Abe Sklar in his 1959 article (see [^1]). It has been widely used, though not always applied properly, in financial and econometric modeling, especially in pricing securities that depend on many underlying securities.
 
+<!-- excerpt-end -->
+
 Properties of copulas are analogous to properties of joint distributions. The *joint distribution* of a set of random variables $(Y_{1}, \dots , Y_{m})$ is defined as
 
 $$F(y_{1}, \dots , y_{m}) = \mathbb{P}\{Y_{i} \leq y_{i}; i = 1, \dots , m\},$$
