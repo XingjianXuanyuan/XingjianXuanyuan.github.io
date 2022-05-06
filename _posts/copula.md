@@ -1,4 +1,7 @@
-# Copulas in Probability Theory
+---
+layout: post
+title: Copulas in Probability Theory 
+---
 
 ## Basic Concepts
 
