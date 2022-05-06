@@ -1,7 +1,6 @@
 ---
 layout: post
 title: Copulas in Probability Theory
-permalink: /posts/copula.md
 ---
 
 ## Basic Concepts
