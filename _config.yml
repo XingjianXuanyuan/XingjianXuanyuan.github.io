@@ -11,6 +11,8 @@ tagline:          'Personal Website'
 description:      'Tao is to the world what rivers are to the ocean.'
 baseurl:          /
 
+include: ["_pages", "_posts"]
+
 # Gems
 plugins:
   - jekyll-gist
