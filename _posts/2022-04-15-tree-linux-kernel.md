@@ -17,9 +17,9 @@ category: "Computing Systems"
 
 Linux's radix tree implementation lives in the file [<code>lib/radix-tree.c</code>](https://elixir.bootlin.com/linux/v5.4.42/source/lib/radix-tree.c). To use it,
 
-~~~ C
+```c
 #include <linux/radix-tree.h>
-~~~
+```
 
 ### Integer ID Management
 
@@ -41,9 +41,9 @@ Each node in the tree contains a value and up to two children; the node's value 
 
 Linux's <code>rbtree</code> implementation lives in the file [<code>lib/rbtree.c</code>](https://elixir.bootlin.com/linux/v5.4.42/source/lib/rbtree.c). To use it,
 
-~~~ C
+```c
 #include <linux/rbtree.h>
-~~~
+```
 
 ## References
 
