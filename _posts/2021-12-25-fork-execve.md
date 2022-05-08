@@ -4,16 +4,9 @@ title: "Linux Processes: fork() and execve() Under the Hood"
 category: "Computing Systems"
 ---
 
-<!-- excerpt-end -->
+In this post, I would like to take a brief look at two Linux system calls: [<code>fork(2)</code>](https://man7.org/linux/man-pages/man2/fork.2.html) and [<code>execve(2)</code>](https://man7.org/linux/man-pages/man2/execve.2.html). The number enclosed in parentheses indicates the section of the Linux man pages in which the objects are described.
 
-<br />
-## Table of Contents
-{:.no_toc}
-* TOC 
-{:toc}
-<br />
-
-In this post, I would like to take a brief look at two Linux system calls: [<code>fork(2)</code>](https://man7.org/linux/man-pages/man2/fork.2.html) and [<code>execve(2)</code>](https://man7.org/linux/man-pages/man2/execve.2.html). The number enclosed in parentheses indicates the section of the Linux man pages in which the objects are described. Note that the [Linux man pages](https://man7.org/linux/man-pages/index.html) is divided into eight sections:
+<p style="color:gray; font-size:60%;">Note that the [Linux man pages](https://man7.org/linux/man-pages/index.html) is divided into eight sections:
 
 1. User commands and tools;
 
@@ -29,7 +22,7 @@ In this post, I would like to take a brief look at two Linux system calls: [<cod
 
 7. Overview and miscellany section;
 
-8. Administration and privileged commands.
+8. Administration and privileged commands.</p>
 
 <!-- excerpt-end -->
 

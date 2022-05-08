@@ -21,6 +21,14 @@ Linux's radix tree implementation lives in the file [<code>lib/radix-tree.c</cod
 #include <linux/radix-tree.h>
 ~~~
 
+### Integer ID Management
+
+idr, ida, Andrew Morton
+
+### XArray
+
+Matthew Wilcox[^2]
+
 ## Red-Black Tree
 
 **Definition 1.** A **read-black tree**{: style="color: red"} is a binary search tree which has the following *red-black properties*:
@@ -36,3 +44,9 @@ Linux's <code>rbtree</code> implementation lives in the file [<code>lib/rbtree.c
 ~~~ C
 #include <linux/rbtree.h>
 ~~~
+
+[^1]: *Trees I: Radix Trees* by Jonathan Corbet, March 13, 2006, [lwn.net/Articles/175432/](https://lwn.net/Articles/175432/).
+
+[^2]: *XArray* by Matthew Wilcox, [kernel.org/doc/html/latest/_sources/core-api/xarray.rst.txt](https://www.kernel.org/doc/html/latest/_sources/core-api/xarray.rst.txt).
+
+[^3]: *Examining Linux 2.6 Page-Cache Performance* by Sonny Rao, Dominique Heger, and Steven Pratt, [landley.net/kdocs/ols/2005/ols2005v2-pages-87-98.pdf](https://landley.net/kdocs/ols/2005/ols2005v2-pages-87-98.pdf)
