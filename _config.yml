@@ -2,8 +2,10 @@
 markdown:             kramdown
 kramdown:
   input:              GFM
-  syntax_highlighter: rouge
-highlighter:          pygments
+  syntax_highlighter_opts:
+    default_lang:     C
+    css_class:        'syntax'
+highlighter:          rouge
 excerpt_separator:    <!-- excerpt-end -->
 mathjax:              true
 
