@@ -2,7 +2,7 @@
 markdown:             kramdown
 kramdown:
   input:              GFM
-  syntax_highlighter: pygments
+  syntax_highlighter: rouge
 highlighter:          pygments
 excerpt_separator:    <!-- excerpt-end -->
 mathjax:              true
