@@ -31,7 +31,7 @@ The <a href="https://man7.org/linux/man-pages/index.html">Linux man pages</a> is
 
 "**Process**{: style="color: red"}" is viewed by many as one of the greatest abstraction in the history of computing. The notion of process provides us with the illusions that the program file we run, being the only objects in the system, has exclusive use of both the processor and the memory, and the processor executes the instructions in our program without interruption. The classic definition of a process is *an instance of a program in execution*[^1].
 
-{% hightlight C %}
+```C
 #include <unistd.h>
 
 /* 
@@ -45,7 +45,7 @@ fork(void);
 /* Never returns on success; -1 is returned on error. */
 int
 execve(const char *pathname, char *const argv[], char *const envp[]);
-{% endhighlight %}
+```
 
 According to SFR(2004)[^2]:
 

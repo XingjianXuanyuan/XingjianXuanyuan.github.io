@@ -1,11 +1,6 @@
 # Build settings
 markdown:             kramdown
-kramdown:
-  input:              GFM
-  syntax_highlighter_opts:
-    default_lang:     C
-    css_class:        'syntax'
-highlighter:          rouge
+highlighter:          pygments
 excerpt_separator:    <!-- excerpt-end -->
 mathjax:              true
 
