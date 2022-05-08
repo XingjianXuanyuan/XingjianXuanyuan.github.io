@@ -1,8 +1,11 @@
 # Build settings
-markdown:           kramdown
-highlighter:        pygments
-excerpt_separator:  <!-- excerpt-end -->
-mathjax:            true
+markdown:             kramdown
+kramdown:
+  input:              GFM
+  syntax_highlighter: pygments
+highlighter:          pygments
+excerpt_separator:    <!-- excerpt-end -->
+mathjax:              true
 
 # Permalinks
 permalink:        pretty
