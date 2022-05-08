@@ -31,7 +31,7 @@ The <a href="https://man7.org/linux/man-pages/index.html">Linux man pages</a> is
 
 "**Process**{: style="color: red"}" is viewed by many as one of the greatest abstraction in the history of computing. The notion of process provides us with the illusions that the program file we run, being the only objects in the system, has exclusive use of both the processor and the memory, and the processor executes the instructions in our program without interruption. The classic definition of a process is *an instance of a program in execution*[^1].
 
-```C
+```c
 #include <unistd.h>
 
 /* 
@@ -50,6 +50,8 @@ execve(const char *pathname, char *const argv[], char *const envp[]);
 According to SFR(2004)[^2]:
 
 > "The reason <code>fork</code> returns 0 in the child, instead of the parent's process ID, is because a child has only one parent and it can always obtain the parent's process ID by calling <code>getppid</code>. A parent, on the other hand, can have any number of children, and there is no way to obtain the process IDs of its children. If a parent wants to keep track of the process IDs of all its children, it must record the return values from <code>fork</code>."
+
+## References
 
 [^1]: Randal E. Bryant and David R. O'Hallaron, *Computer Systems: A Programmer's Perspective, Third Edition*, Pearson Education, 2016.
 

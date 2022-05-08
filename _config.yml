@@ -1,5 +1,11 @@
 # Build settings
 markdown:             kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+        # Use existing pygments syntax highlighting css
+        css_class: 'highlight'
 highlighter:          pygments
 excerpt_separator:    <!-- excerpt-end -->
 mathjax:              true

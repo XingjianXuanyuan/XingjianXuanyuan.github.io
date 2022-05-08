@@ -45,6 +45,8 @@ Linux's <code>rbtree</code> implementation lives in the file [<code>lib/rbtree.c
 #include <linux/rbtree.h>
 ~~~
 
+## References
+
 [^1]: *Trees I: Radix Trees* by Jonathan Corbet, March 13, 2006, [lwn.net/Articles/175432/](https://lwn.net/Articles/175432/).
 
 [^2]: *XArray* by Matthew Wilcox, [kernel.org/doc/html/latest/_sources/core-api/xarray.rst.txt](https://www.kernel.org/doc/html/latest/_sources/core-api/xarray.rst.txt).
