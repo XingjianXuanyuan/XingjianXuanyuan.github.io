@@ -4,10 +4,10 @@ title: "Linux Processes: fork() and execve() Under the Hood"
 category: "Computing Systems"
 ---
 
-In this post, I would like to give a brief account of two Linux system calls---[<code>fork(2)</code>](https://man7.org/linux/man-pages/man2/fork.2.html) and [<code>execve(2)</code>](https://man7.org/linux/man-pages/man2/execve.2.html)---illustrated with Linux socket programming examples written in C. These two functions are commonly used by Linux processes from both user and kernel spaces. Note that the number enclosed in parentheses indicates the section of the Linux man pages in which the objects are described.
+In this post, I would like to give a brief account of two Linux system calls---[<code>fork(2)</code>](https://man7.org/linux/man-pages/man2/fork.2.html) and [<code>execve(2)</code>](https://man7.org/linux/man-pages/man2/execve.2.html)---with system-level implementation details presented and Linux socket programming examples explained. These two functions are commonly used by Linux processes from both user and kernel spaces. In particular, as you can see below, they are involved in the Linux kernel initialization process. [The GitBook "Linux Insides"](https://0xax.gitbooks.io/linux-insides/content/) provides a comprehensive discussion on this topic.
 
 <p style="color:gray; font-size:80%;">
-The <a href="https://man7.org/linux/man-pages/index.html">Linux man pages</a> is divided into eight sections:
+Note that the number enclosed in parentheses after the object name indicates the section of the Linux man pages in which the object is described. The <a href="https://man7.org/linux/man-pages/index.html">Linux man pages</a> is divided into eight sections:
 1. User commands and tools;
 2. Linux system calls and system call wrappers;
 3. Library functions excluding system call wrappers;
@@ -63,13 +63,19 @@ int
 execve(const char *pathname, char *const argv[], char *const envp[]);
 ```
 
-The child differs from the parent only in its PID (which is unique), its PPID (parent's PID, which is set to the original process), and certain resources and statistics, such as pending signals, which are not inherited. The <code>fork()</code> function is called once but it returns twice: once in the calling process (the parent), and once in the newly created child process. The parent and child are separate processes that run concurrently. According to SFR(2004)[^4]:
+The child differs from the parent only in its PID (which is unique), its PPID (parent's PID, which is set to the original process), and certain resources and statistics, such as pending signals, which are not inherited.
+
+<p style="color:gray; font-size:80%;">
+A child created via <code>fork()</code> initially has an empty pending signal set; the pending signal set is preserved across an <code>execve()</code>. However, a child created via <code>fork()</code> inherits a copy of its parent's signal dispositions. During an <code>execve()</code>, the dispositions of handled signals are reset to the default; the dispositions of ignored signals are left unchanged.
+</p>
+
+The <code>fork()</code> function is called once but it returns twice: once in the calling process (the parent), and once in the newly created child process. The parent and child are separate processes that run concurrently. According to SFR(2004)[^4]:
 
 > "The reason <code>fork()</code> returns 0 in the child, instead of the parent's process ID, is because a child has only one parent and it can always obtain the parent's process ID by calling <code>getppid()</code>. A parent, on the other hand, can have any number of children, and there is no way to obtain the process IDs of its children. If a parent wants to keep track of the process IDs of all its children, it must record the return values from <code>fork()</code>."
 
 The <code>execve()</code> function loads and runs the executable object file specified by the first argument with the argument list <code>argv</code> (a null-terminated array of pointers) and the environment variable list <code>envp</code> (a null-terminated array of pointers to name-value pairs). By convention, <code>argv[0]</code> is the name of the executable object file.
 
-When the kernel has started itself (has been loaded into memory, has started running, and has initialized all device drivers and data structures and such), the kernel thread created by process 0 (the *idle process*) executes the <code>init()</code> function, which then invokes the <code>execve()</code> system call to load a user-level program---**init**{: style="color: red"}. The kernel looks for <code>init</code> in a few locations that have been historically used for it, but the proper location for it on a Linux system is <code>/sbin/init</code>. If the kernel cannot find <code>init</code>, it tries to run <code>/bin/sh</code>, and if that also fails, the startup of the system fails.
+When the kernel has started itself (has been loaded into memory, has started running, and has initialized all device drivers and data structures and such), the kernel thread created by the *idle process* (<code>PID=0</code>) executes the <code>init()</code> function, which then invokes the <code>execve()</code> system call to load a user-level program---**init**{: style="color: red"}. The kernel looks for <code>init</code> in a few locations that have been historically used for it, but the proper location for it on a Linux system is <code>/sbin/init</code>. If the kernel cannot find <code>init</code>, it tries to run <code>/bin/sh</code>, and if that also fails, the startup of the system fails.
 
 ## Implementation Details of fork() and execve()
 
@@ -86,13 +92,13 @@ noinline void __ref rest_init(void)
 }
 ```
 
-The above details can be found in the <code>/init/main.c</code> directory of the [Linux source code](https://elixir.bootlin.com/linux/latest/source). The <code>kernel_thread()</code> function (described in <code>/kernel/fork.c</code>) creates the <code>init</code> process by the following line of code:
+The above details can be found in the <code>/init/main.c</code> directory of the [Linux source code](https://elixir.bootlin.com/linux/latest/source). The <code>kernel_thread()</code> function (described in <code>/kernel/fork.c</code>) creates the <code>init</code> process using this line of code:
 
 ```c
 return kernel_clone(&args);
 ```
 
-According to the [Linux implementation](https://elixir.bootlin.com/linux/latest/source/kernel/fork.c), it is this <code>kernel_clone()</code> function that actually does the work for the <code>fork()</code> system call:
+It is this <code>kernel_clone()</code> function that actually does the work for the <code>fork()</code> system call:
 
 ```c
 SYSCALL_DEFINE0(fork)
@@ -107,6 +113,95 @@ SYSCALL_DEFINE0(fork)
 	/* can not support in nommu mode */
 	return -EINVAL;
 #endif
+}
+```
+
+Here, <code>SYSCALL_DEFINE0()</code> is simply a macro that defines a system call with no parameters (hence the 0).
+
+### execve()
+
+We can find the definition of the <code>execve()</code> function inside [<code>/fs/exec.c</code>](https://elixir.bootlin.com/linux/latest/source/fs/exec.c):
+
+```c
+SYSCALL_DEFINE3(execve,
+		const char __user *, filename,
+		const char __user *const __user *, argv,
+		const char __user *const __user *, envp)
+{
+	return do_execve(getname(filename), argv, envp);
+}
+```
+
+The <code>do_execve()</code> function is a wrapper function that calls <code>do_execveat_common()</code>. The latter does the actual work for <code>execve()</code>:
+
+```c
+static int
+do_execveat_common(int fd, struct filename *filename,
+				   struct user_arg_ptr argv,
+				   struct user_arg_ptr envp,
+				   int flags)
+{
+	struct linux_binprm *bprm;
+	int retval;
+
+	if (IS_ERR(filename))
+		return PTR_ERR(filename);
+	
+	if ((current->flags & PF_NPROC_EXCEEDED) && is_ucounts_overlimit(current_ucounts(), UCOUNT_RLIMIT_NPROC, rlimit(RLIMIT_NPROC))) {
+		retval = -EAGAIN;
+		goto out_ret;
+	}
+	
+	current->flags &= ~PF_NPROC_EXCEEDED;
+	
+	bprm = alloc_bprm(fd, filename);
+	if (IS_ERR(bprm)) {
+		retval = PTR_ERR(bprm);
+		goto out_ret;
+	}
+
+	retval = count(argv, MAX_ARG_STRINGS);
+	if (retval == 0)
+		pr_warn_once("process '%s' launched '%s' with NULL argv: empty string added\n", current->comm, bprm->filename);
+	if (retval < 0)
+		goto out_free;
+	bprm->argc = retval;
+
+	retval = count(envp, MAX_ARG_STRINGS);
+	if (retval < 0)
+		goto out_free;
+	bprm->envc = retval;
+
+	retval = bprm_stack_limits(bprm);
+	if (retval < 0)
+		goto out_free;
+
+	retval = copy_string_kernel(bprm->filename, bprm);
+	if (retval < 0)
+		goto out_free;
+	bprm->exec = bprm->p;
+
+	retval = copy_strings(bprm->envc, envp, bprm);
+	if (retval < 0)
+		goto out_free;
+	
+	retval = copy_strings(bprm->argc, argv, bprm);
+	if (retval < 0)
+		goto out_free;
+	
+	if (bprm->argc == 0) {
+		retval = copy_string_kernel("", bprm);
+		if (retval < 0)
+			goto out_free;
+		bprm->argc = 1;
+	}
+
+	retval = bprm_execve(bprm, fd, filename, flags);
+out_free:
+	free_bprm(bprm);
+out_ret:
+	putname(filename);
+	return retval;
 }
 ```
 
