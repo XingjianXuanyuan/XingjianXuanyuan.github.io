@@ -4,7 +4,7 @@ title: "Linux Processes: fork() and execve() Under the Hood"
 category: "Computing Systems"
 ---
 
-In this post, I would like to give a brief account of two Linux system calls---[<code>fork(2)</code>](https://man7.org/linux/man-pages/man2/fork.2.html) and [<code>execve(2)</code>](https://man7.org/linux/man-pages/man2/execve.2.html)---with system-level implementation details presented and Linux socket programming examples explained. These two functions are commonly used by Linux processes from both user and kernel spaces. In particular, as you can see below, they are involved in the Linux kernel initialization process. [The GitBook "Linux Insides"](https://0xax.gitbooks.io/linux-insides/content/) provides a comprehensive discussion on this topic.
+In this post, I would like to give a brief account of two Linux system calls---[<code>fork(2)</code>](https://man7.org/linux/man-pages/man2/fork.2.html) and [<code>execve(2)</code>](https://man7.org/linux/man-pages/man2/execve.2.html)---with operating system kernel implementation details presented and two code examples explained. <code>fork(2)</code> and <code>execve(2)</code> are commonly used by Linux processes from both user and kernel spaces. In particular, as you can see below, they are involved in the Linux kernel initialization process. [The GitBook "Linux Insides"](https://0xax.gitbooks.io/linux-insides/content/) provides a comprehensive discussion on this topic.
 
 <p style="color:gray; font-size:80%;">
 Note that the number enclosed in parentheses after the object name indicates the section of the Linux man pages in which the object is described. The <a href="https://man7.org/linux/man-pages/index.html">Linux man pages</a> is divided into eight sections:
@@ -205,6 +205,54 @@ out_ret:
 }
 ```
 
+Declared in <code>/include/linux/binfmts.h</code>, the <code>linux_binprm</code> structure is used to hold the arguments that are used when loading binaries.
+
+## A Simple User-Space Program: <code>execve_cat.c</code>
+
+```c
+#include <unistd.h>
+#include <stdio.h>
+
+int main(int argc, char *argv[])
+{
+    char *var[3];
+
+    if (argc < 2) {
+        printf("Please type a file name.\n");
+        return -1;
+    }
+
+    var[0] = "/bin/cat";
+    var[1] = argv[1];
+    var[2] = 0;
+    execve(var[0], var, 0);
+
+    return 0;
+}
+```
+
+The above program [^5] asks the <code>execve()</code> function to execute the following shell command:
+
+```console
+cat <filename>
+```
+
+We can compile the program and run it with the root privilege:
+
+```console
+$ gcc execve_cat.c -o execcat
+$ sudo chown root execcat
+$ sudo chmod 4755 execcat
+$ ./execcat /etc/passwd
+...
+nobody:*:-2:-2:Unprivileged User:/var/empty:/usr/bin/false
+root:*:0:0:System Administrator:/var/root:/bin/sh
+daemon:*:1:1:System Services:/var/root:/usr/bin/false
+...
+```
+
+## Concurrent Sockets
+
 ## References
 
 [^1]: Randal E. Bryant and David R. O'Hallaron, *Computer Systems: A Programmer's Perspective, Third Edition*, Pearson Education, 2016.
@@ -214,3 +262,5 @@ out_ret:
 [^3]: David R. Butenhof, *Programming with POSIX Threads*, Addison-Wesley, 1997.
 
 [^4]: W. Richard Stevens, Bill Fenner, and Andrew M. Rudoff, *UNIX Network Programming Volume 1, Third Edition: The Sockets Networking API*, Addison-Wesley, 2004.
+
+[^5]: Wenliang Du, *Computer & Internet Security: A Hands-on Approach, Second Edition*, 2019.
