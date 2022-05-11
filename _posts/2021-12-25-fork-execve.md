@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
 }
 ```
 
-The above program [^5] asks the <code>execve()</code> function to execute the following shell command:
+The above program from Du (2019)[^5] asks the <code>execve()</code> function to execute the following shell command:
 
 ```console
 cat <filename>
