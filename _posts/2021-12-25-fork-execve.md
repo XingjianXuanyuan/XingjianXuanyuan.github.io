@@ -31,17 +31,17 @@ The Linux **system calls**{: style="color: red"} (or *syscalls*) are the only me
 
 ## The Concept of a Process
 
-"**Process**{: style="color: red"}" is viewed by many as one of the greatest abstraction in the history of computing. The notion of process provides us with the illusions that the program file we run, being the only objects in the system, has exclusive use of both the processor and the memory, and the processor executes the instructions in our program without interruption. The classic definition of a process is *an instance of a program in execution*[^1]. Processes are more than just the executing program code (often called the **text section**{: style="color: red"} in Unix). They also include a set of resources such as open files and pending signals, internal operating system kernel data, processor state, a memory address space with one or more memory mappings, one or more **threads**{: style="color: red"} of execution (often shortened to *threads*), and a **data section**{: style="color: red"} containing global (as well as static) variables. The concepts of program, process, and thread might sometimes be confusing. To make clear:
+"**Process**{: style="color: red"}" is viewed by many as one of the greatest abstraction in the history of computing. The notion of process provides us with the illusions that the program file we run, being the only objects in the system, has exclusive use of both the processor and the memory, and the processor executes the instructions in our program without interruption. The classic definition of a process is *an instance of a program in execution*[^1]. Processes are more than just the executing program code (often called the **text section**{: style="color: red"} in UNIX). They also include a set of resources such as open files and pending signals, internal operating system kernel data, processor state, a memory address space with one or more memory mappings, one or more **threads**{: style="color: red"} of execution (often shortened to *threads*), and a **data section**{: style="color: red"} containing global (as well as static) variables. The concepts of program, process, and thread might sometimes be confusing. To make clear:
 
 - A program itself is not a process; a process is an active program and related resources[^2].
 
 - A thread (sometimes called *lightweight processes*) is part of a process that is necessary to execute code[^3].
 
 <p style="color:gray; font-size:80%;">
-On most computers this means each thread has a pointer to the thread's current instruction ("program counter"), a pointer to the top of the thread's stack (<code>%rsp</code>), general registers, and floating-point or address registers if they are kept separate. Multiple threads can exist within a single process. They share all of the files and memory, including the program text and data sections. In traditional Unix systems, each process consists of one thread. In modern systems, however, multi-threaded programs are common. Linux does not have explicit kernel support (any special scheduling semantics or data structures) for threads; a Linux thread is merely a process that shares certain resources with other processes.
+On most computers this means each thread has a pointer to the thread's current instruction ("program counter"), a pointer to the top of the thread's stack (<code>%rsp</code>), general registers, and floating-point or address registers if they are kept separate. Multiple threads can exist within a single process. They share all of the files and memory, including the program text and data sections. In traditional UNIX systems, each process consists of one thread. In modern systems, however, multi-threaded programs are common. Linux does not have explicit kernel support (any special scheduling semantics or data structures) for threads; a Linux thread is merely a process that shares certain resources with other processes.
 </p>
 
-Most operating systems implement a "spawn" mechanism to create a new process in a new address space, read in an executable, and begin executing it. One Unix process spawns another either by replacing itself when it is done---call one of the six <code>exec()</code> functions---or, if it needs to stay around, by making a copy of itself---call <code>fork()</code>.
+Most operating systems implement a "spawn" mechanism to create a new process in a new address space, read in an executable, and begin executing it. One UNIX process spawns another either by replacing itself when it is done---call one of the six <code>exec()</code> functions---or, if it needs to stay around, by making a copy of itself---call <code>fork()</code>.
 
 <p style="color:gray; font-size:80%;">
 The differences in the six <code>exec()</code> functions (<code>execl(), execv(), execle(), execve(), execlp(), execvp()</code>) are: (a) whether the program file to execute is specified by a filename or a pathname; (b) whether the arguments to the new program are listed one by one or referenced through an array of pointers; and (c) whether the environment of the calling process (the process that calls <code>exec()</code>) is passed to the new program or whether a new environment is specified. Normally, only <code>execve()</code> is a system call within the kernel and the other five are library functions that call <code>execve()</code>.
@@ -69,11 +69,15 @@ The child differs from the parent only in its PID (which is unique), its PPID (p
 A child created via <code>fork()</code> initially has an empty pending signal set; the pending signal set is preserved across an <code>execve()</code>. However, a child created via <code>fork()</code> inherits a copy of its parent's signal dispositions. During an <code>execve()</code>, the dispositions of handled signals are reset to the default; the dispositions of ignored signals are left unchanged.
 </p>
 
-The <code>fork()</code> function is called once but it returns twice: once in the calling process (the parent), and once in the newly created child process. The parent and child are separate processes that run concurrently. According to SFR(2004)[^4]:
+The <code>fork()</code> function is called once but it returns twice: once in the calling process (the parent), and once in the newly created child process. The parent and child are separate processes that run concurrently. It is thus important to realize that after a <code>fork()</code>, it is indeterminate which of the two processes is next scheduled to use the CPU. According to SFR(2004)[^4]:
 
 > "The reason <code>fork()</code> returns 0 in the child, instead of the parent's process ID, is because a child has only one parent and it can always obtain the parent's process ID by calling <code>getppid()</code>. A parent, on the other hand, can have any number of children, and there is no way to obtain the process IDs of its children. If a parent wants to keep track of the process IDs of all its children, it must record the return values from <code>fork()</code>."
 
-The <code>execve()</code> function loads and runs the executable object file specified by the first argument with the argument list <code>argv</code> (a null-terminated array of pointers) and the environment variable list <code>envp</code> (a null-terminated array of pointers to name-value pairs). By convention, <code>argv[0]</code> is the name of the executable object file.
+Conceptually, we can consider <code>fork()</code> as creating copies of the parent's text, data, heap, and stack segments. However, actually performing a simple copy of the parent's virtual memory pages into the new child process would be wasteful. According to [TLPI](https://man7.org/tlpi/index.html)[^5], most modern UNIX implementations, including Linux, use two techniques to avoid such wasteful copying:
+
+> "The kernel marks the text segment of each process as read-only, so that a process cannot modify its own code. This means that the parent and child can share the same text segment. The <code>fork()</code> system call creates a text segment for the child by building a set of per-process page-table entries that refer to the same virtual memory page frames already used by the parent. For the pages in the data, heap, and stack segments of the parent process, the kernel employs a technique known as **copy-on-write**{: style="color: red"}. Initially, the kernel sets things up so that the page-table entries for these segments refer to the same physical memory pages as the corresponding page-table entries in the parent, and the pages themselves are marked read-only. After the code>fork()</code>, the kernel traps any attempts by either the parent or the child to modify one of these pages, and makes a duplicate copy of the about-to-be-modified page. This new page copy is assigned to be the faulting process, and the corresponding page-table entry for the child is adjusted appropriately."
+
+The <code>execve()</code> function loads and runs the executable object file specified by the first argument with the argument list <code>argv</code> (a null-terminated array of pointers) and the environment variable list <code>envp</code> (a null-terminated array of pointers to name-value pairs in the form <code>name=value</code>). By convention, <code>argv[0]</code> is the name of the executable object file. After an <code>execve()</code>, the process ID of the process remains the same. If the set-user-ID (set-group-ID) permission bit of the program file specified by <code>pathname</code> is set, then, when the file is <code>exec</code>ed, the effective user (group) ID of the process is changed to be the same as the owner (group) of the program file. After optionally changing the effective IDs, and regardless of whether they were changed, an <code>execve()</code> copies the value of the process's effective user ID into its saved set-user-ID, and copies the value of the process's effective group ID into its saved set-group-ID. For more details about the effect of <code>fork()</code> and <code>execve()</code> on process attributes, please refer to TLPI Chapter 28.
 
 When the kernel has started itself (has been loaded into memory, has started running, and has initialized all device drivers and data structures and such), the kernel thread created by the *idle process* (<code>PID=0</code>) executes the <code>init()</code> function, which then invokes the <code>execve()</code> system call to load a user-level program---**init**{: style="color: red"}. The kernel looks for <code>init</code> in a few locations that have been historically used for it, but the proper location for it on a Linux system is <code>/sbin/init</code>. If the kernel cannot find <code>init</code>, it tries to run <code>/bin/sh</code>, and if that also fails, the startup of the system fails.
 
@@ -231,7 +235,7 @@ int main(int argc, char *argv[])
 }
 ```
 
-The above program from Du (2019)[^5] asks the <code>execve()</code> function to execute the following shell command:
+The above program from Du (2019)[^6] asks the <code>execve()</code> function to execute the following shell command:
 
 ```console
 cat <filename>
@@ -251,7 +255,72 @@ daemon:*:1:1:System Services:/var/root:/usr/bin/false
 ...
 ```
 
-## Concurrent Sockets
+## Concurrent Server
+
+The server program <code>unp_server.c</code> modified from SFR(2004) first creates a TCP socket, binds it with the wildcard address <code>INADDR_ANY</code> and port number defined by the macro <code>SERV_PORT</code>, and blocks in the call to <code>accept()</code>, waiting for a client connection to complete. For each client, the server uses <code>fork()</code> to spawn a child. The child calls <code>str_echo</code> to handle the new client.
+
+```c
+/* str_echo: performs server processing for each client.
+ *           It reads data from the client and echoes it
+ *           back to the client.
+ */
+void str_echo(int sockfd)
+{
+    ssize_t n;
+    char buf[MAXLINE];
+    while ((n = read(sockfd, buf, MAXLINE)) > 0)
+        Writen(sockfd, buf, n);
+    if (n < 0)
+        err_sys("str_echo: read error");
+}
+
+int main(int argc, char *argv[])
+{
+    int listenfd, connfd;
+    pid_t childpid;
+    socklen_t clilen;
+    struct sockaddr_in cliaddr, servaddr;
+
+    listenfd = Socket(AF_INET, SOCK_STREAM, 0);
+
+    bzero(&servaddr, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    servaddr.sin_port = htons(SERV_PORT);
+
+    Bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
+
+    Listen(listenfd, LISTENQ);
+
+    for ( ; ; ) {
+        clilen = sizeof(cliaddr);
+        connfd = Accept(listenfd, (SA *) &cliaddr, &clilen);
+
+        if ((childpid = Fork()) == 0) { /* child process*/
+            Close(listenfd);            /* close listening socket */
+            str_echo(connfd);           /* process the request */
+            exit(0);
+        }
+        Close(connfd);                  /* parent closes connected socket */
+    }
+
+    return 0;
+}
+```
+
+The functions with capitalized names are wrapper functions that perform error checking for the actual function calls, which is a recommended technique in SFR.
+
+```c
+/* Socket wrapper functions */
+int Accept(int fd, struct sockaddr *sa, socklen_t *salenptr);		/* accept() */
+void Bind(int fd, const strut sockaddr *sa, socklen_t salen);		/* bind() */
+void Connect(int fd, const struct sockaddr *sa, socklen_t salen);	/* connect() */
+int Socket(int family, int type, int protocol);						/* socket() */
+void Close(int fd);													/* close() */
+pid_t Fork(void);													/* fork() */
+```
+
+The whole program can be found [here](https://github.com/XingjianXuanyuan/CSE422S-OperatingSystemsOrganization/blob/main/Src/Studio16/unp_server.c).
 
 ## References
 
@@ -263,4 +332,6 @@ daemon:*:1:1:System Services:/var/root:/usr/bin/false
 
 [^4]: W. Richard Stevens, Bill Fenner, and Andrew M. Rudoff, *UNIX Network Programming Volume 1, Third Edition: The Sockets Networking API*, Addison-Wesley, 2004.
 
-[^5]: Wenliang Du, *Computer & Internet Security: A Hands-on Approach, Second Edition*, 2019.
+[^5]: Michael Kerrisk, *The Linux Programming Interface: A Linux and UNIX System Programming Handbook*, San Francisco: No Starch Press, 2010.
+
+[^6]: Wenliang Du, *Computer & Internet Security: A Hands-on Approach, Second Edition*, 2019.
