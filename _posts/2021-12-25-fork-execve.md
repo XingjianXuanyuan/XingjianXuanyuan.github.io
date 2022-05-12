@@ -4,7 +4,7 @@ title: "Linux Processes: fork() and execve() Under the Hood"
 category: "Computing Systems"
 ---
 
-In this post, I would like to give a brief account of two Linux system calls---[<code>fork(2)</code>](https://man7.org/linux/man-pages/man2/fork.2.html) and [<code>execve(2)</code>](https://man7.org/linux/man-pages/man2/execve.2.html)---with operating system kernel implementation details presented and two code examples explained. <code>fork(2)</code> and <code>execve(2)</code> are commonly used by Linux processes from both user and kernel spaces. In particular, as you can see below, they are involved in the Linux kernel initialization process. [The GitBook "Linux Insides"](https://0xax.gitbooks.io/linux-insides/content/) provides a comprehensive discussion on this topic.
+In this post, I would like to give a brief account of two Linux system calls---[<code>fork(2)</code>](https://man7.org/linux/man-pages/man2/fork.2.html) and [<code>execve(2)</code>](https://man7.org/linux/man-pages/man2/execve.2.html)---with operating system kernel implementation details (not glibc wrappers) presented and two code examples explained. <code>fork(2)</code> and <code>execve(2)</code> are commonly used by Linux processes from both user and kernel spaces. In particular, as you can see below, they are involved in the Linux kernel initialization process. [The GitBook "Linux Insides"](https://0xax.gitbooks.io/linux-insides/content/) provides a comprehensive discussion on this topic.
 
 <p style="color:gray; font-size:80%;">
 Note that the number enclosed in parentheses after the object name indicates the section of the Linux man pages in which the object is described. The <a href="https://man7.org/linux/man-pages/index.html">Linux man pages</a> is divided into eight sections:
@@ -121,6 +121,10 @@ SYSCALL_DEFINE0(fork)
 ```
 
 Here, <code>SYSCALL_DEFINE0()</code> is simply a macro that defines a system call with no parameters (hence the 0).
+
+<p style="color:gray; font-size:80%;">
+The <code>clone()</code> system call is similar to <code>fork()</code> except that more arguments are specified by the user to gain more control over what pieces of execution context are shared between the calling process and the child process.
+</p>
 
 ### execve()
 
@@ -320,7 +324,46 @@ void Close(int fd);													/* close() */
 pid_t Fork(void);													/* fork() */
 ```
 
-The whole program can be found [here](https://github.com/XingjianXuanyuan/CSE422S-OperatingSystemsOrganization/blob/main/Src/Studio16/unp_server.c).
+The whole program code can be found [here](https://github.com/XingjianXuanyuan/CSE422S-OperatingSystemsOrganization/blob/main/Src/Studio16/unp_server.c).
+
+## An Experiment on Program Execution after a <code>fork()</code>
+
+In this final section, I am concerned with how a Linux program executes after a <code>fork()</code>; which process is scheduled first, the parent or the child? The <code>spawn_children.c</code> program is modified from LPI, which uses <code>fork()</code> to create multiple children (the number of children spawned is user-specified) in a <code>for</code> loop. The whole program code can be found [here](https://github.com/XingjianXuanyuan/CSE422S-OperatingSystemsOrganization/blob/main/Src/Studio8/spawn_children.c). After each <code>fork()</code>, both parent and child print a message containing the loop counter value and a string indicating whether the process is the parent or child. For example, if we asked the program to produce two children, we might see the following (I was compiling on a macOS/x86-64 system):
+
+```console
+$ gcc spawn_children.c -o spawn
+$ ./spawn 2
+0 parent
+0 child
+1 parent
+1 child
+The elapsed time is 0.000000000 seconds.
+```
+
+We can run this program to create a large number of children. The output messages tell us whether the parent or the child is the first to print its message after each <code>fork()</code>. I use a script file called [<code>fork_whos_on_first.count.awk</code>](https://github.com/bradfa/tlpi-dist/blob/master/procexec/fork_whos_on_first.count.awk) provided by the author of LPI to analyze the output messages of <code>spawn_children.c</code>:
+
+```console
+$ sudo chmod +x fork_whos_on_first.count.awk
+$ ./spawn 1000 > spawn_output.txt
+% ./fork_whos_on_first.count.awk spawn_output.txt 
+All done
+parent    996  99.60%
+child       4   0.40%
+
+$ ./spawn 10000 > spawn_output.txt
+$ ./fork_whos_on_first.count.awk spawn_output.txt
+All done
+parent   9983  99.83%
+child      17   0.17%
+
+$ ./spawn 100000 > spawn_output.txt
+$ ./fork_whos_on_first.count.awk spawn_output.txt
+All done
+parent  99859  99.86%
+child     141   0.14%
+```
+
+For the case of $100,000$ children created, the execution time of the <code>spawn_children.c</code> is $29.741205000$ seconds. The results show that the parent is almost always scheduled first after a <code>fork()</code>.
 
 ## References
 
