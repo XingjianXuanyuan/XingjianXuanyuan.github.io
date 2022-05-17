@@ -106,7 +106,7 @@ Oh Danny Boy the pipes the pipes are calling.%
 
 ## Task 2: Understanding the Vulnerable Program
 
-The <code>stack.c</code> program shown below reads $517$ bytes of data from a file called <code>badfile</code>, and then copies the data to a buffer of size $100$:
+The <code>stack.c</code> program shown below reads $517$ bytes of data from a file called "<code>badfile</code>", and then copies the data to a buffer of size $100$:
 
 ```c
 /* stack.c */
@@ -232,7 +232,7 @@ Breakpoint 1, bof (str=0xffffd1c3 "V\004") at stack.c:16
 16	{
 ```
 
-When <code>gdb</code> stops inside the <code>bof</code> function, it stops before the <code>ebp</code> register is set to point to the current stack frame, so if we print out the value of <code>ebp</code> here, we will get the caller's <code>ebp</code> value. We need to use the <code>next</code> command[^2] to execute a few instructions and stop after the <code>ebp</code> register is modified to point to the stack frame of the <code>bof</code> function.
+When <code>gdb</code> stops inside the <code>bof</code> function, it stops before the <code>ebp</code> register is set to point to the current stack frame, so if we print out the value of <code>$ebp</code> here, we will get the caller's <code>$ebp</code> value. We need to use the <code>next</code> command[^2] to execute a few instructions and stop after the <code>ebp</code> register is modified to point to the stack frame of the <code>bof</code> function.
 
 ```console
 gdb-peda$ next
@@ -281,7 +281,29 @@ $2 = (char (*)[100]) 0xffffcd2c
 
 ### Launching attacks
 
-Since the value of the stack frame pointer is <code>0xffffcd98</code>, the return address is stored in <code>0xffffcd98 + 4</code>; the first address that we can jump to is <code>0xffffcd98 + 8</code>, which can be put inside the return address field. The distance between the address of <code>$ebp</code> (<code>0xffffcd98</code>) and the buffer (<code>0xffffcd2c</code>) is <code>0x6c</code>, which is $108$ in decimalnotation. Therefore, the distance between the buffer's starting point and the return address field is $112$.
+Since the value of the stack frame pointer is <code>0xffffcd98</code>, the return address is stored in <code>0xffffcd98 + 4</code>; the first address that we can jump to is <code>0xffffcd98 + 8</code>, which can be put inside the return address field. The distance between the address of the <code>ebp</code> register (<code>0xffffcd98</code>) and the buffer (<code>0xffffcd2c</code>) is <code>0x6c</code>, which is $108$ in decimal notation. Therefore, the distance between the buffer's starting point and the return address field is $112$.
+
+To write the "<code>badfile</code>" in Python, an array of size $517$ bytes is created and filled with <code>0x90</code> (the <code>NOP</code> instruction). Since <code>gdb</code> may push some additional data onto the stack at the beginning, causing the stack frame to be allocated deeper than it would be when the program executes directly, the first address that we can jump to may be higher than <code>$ebp + 8</code>. Here I choose <code>$ebp + 120</code>. The return address field starts from offset $112$ and ends at offset $116$ (not including $116$), i.e., <code>content[112:116]</code>. The x86 architecture uses the little-endian order, so in Python, when putting a $4$-byte address into the memory, <code>byteorder='little'</code> is used to specify the byte order.
+
+At the end of the "<code>badfile</code>", a bunch of shellcode is included, the aim of which is to use the <code>execve()</code> system call to run <code>/bin/sh</code>. The corresponding program is presented in [Task 1](#task-1-getting-familiar-with-shellcode). Registers <code>eax</code>, <code>ebx</code>, <code>ecx</code>, <code>edx</code> should be configured correctly. A system call is executed using the instruction <code>int $0x80</code>.
+
+```yaml
+"\x31\xc0"      # xorl  %eax, %eax
+"\x50"          # pushl %eax
+"\x68""//sh"    # pushl $0x68732f2f
+"\x68""/bin"    # pushl $0x6e69622f
+"\x89\xe3"      # movl  %esp, %ebx
+"\x50"          # pushl %eax
+"\x53"          # pushl %ebx
+"\x89\xe1"      # movl  %esp, %ecx
+"\x99"          # cdq
+"\xb0\x0b"      # movb  $0x0b, %al
+"\xcd\x80"      # int   $0x80
+```
+
+- Line 1: Using XOR operation on <code>%eax</code> will set <code>%eax</code> to zero without introducing a zero in the code.
+- Line 2: Push a zero onto the stack, which marks the end of the "<code>/bin/sh</code>" string.
+- Line 3: Push "<code>//sh</code>" onto the stack (double slash, treated by the system call as the same as the single slash, is used because $4$ bytes are needed for instruction).
 
 ## Notes
 
