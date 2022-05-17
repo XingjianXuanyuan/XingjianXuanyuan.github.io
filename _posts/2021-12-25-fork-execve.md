@@ -77,7 +77,7 @@ Conceptually, we can consider <code>fork()</code> as creating copies of the pare
 
 > "The kernel marks the text segment of each process as read-only, so that a process cannot modify its own code. This means that the parent and child can share the same text segment. The <code>fork()</code> system call creates a text segment for the child by building a set of per-process page-table entries that refer to the same virtual memory page frames already used by the parent. For the pages in the data, heap, and stack segments of the parent process, the kernel employs a technique known as **copy-on-write**{: style="color: red"}. Initially, the kernel sets things up so that the page-table entries for these segments refer to the same physical memory pages as the corresponding page-table entries in the parent, and the pages themselves are marked read-only. After the code>fork()</code>, the kernel traps any attempts by either the parent or the child to modify one of these pages, and makes a duplicate copy of the about-to-be-modified page. This new page copy is assigned to be the faulting process, and the corresponding page-table entry for the child is adjusted appropriately."
 
-The <code>execve()</code> function loads and runs the executable object file specified by the first argument with the argument list <code>argv</code> (a null-terminated array of pointers) and the environment variable list <code>envp</code> (a null-terminated array of pointers to name-value pairs in the form <code>name=value</code>). By convention, <code>argv[0]</code> is the name of the executable object file. After an <code>execve()</code>, the process ID of the process remains the same. If the set-user-ID (set-group-ID) permission bit of the program file specified by <code>pathname</code> is set, then, when the file is <code>exec</code>ed, the effective user (group) ID of the process is changed to be the same as the owner (group) of the program file. After optionally changing the effective IDs, and regardless of whether they were changed, an <code>execve()</code> copies the value of the process's effective user ID into its saved set-user-ID, and copies the value of the process's effective group ID into its saved set-group-ID. For more details about the effect of <code>fork()</code> and <code>execve()</code> on process attributes, please refer to TLPI Chapter 28.
+The <code>execve()</code> function loads and runs the executable object file specified by the first argument with the argument list <code>argv</code> (a null-terminated array of pointers) and the environment variable list <code>envp</code> (a null-terminated array of pointers to name-value pairs in the form <code>name=value</code>). By convention, <code>argv[0]</code> is the name of the executable object file. After an <code>execve()</code>, the process ID of the process remains the same. If the set-user-ID (set-group-ID) permission bit of the program file specified by <code>pathname</code> is set, then, when the file is <code>exec</code>ed, the effective user (group) ID of the process is changed to be the same as the owner (group) of the program file. After optionally changing the effective IDs, and regardless of whether they were changed, an <code>execve()</code> copies the value of the process's effective user ID into its saved set-user-ID, and copies the value of the process's effective group ID into its saved set-group-ID. For more details about the effect of <code>fork()</code> and <code>execve()</code> on process attributes, please refer to TLPI Chapter 28. Furthermore, the POSIX specification now lists 25 special cases in how the parent's state is copied to the child: file locks, timers, asynchronous I/O operations, tracing, etc[^6].
 
 When the kernel has started itself (has been loaded into memory, has started running, and has initialized all device drivers and data structures and such), the kernel thread created by the *idle process* (<code>PID=0</code>) executes the <code>init()</code> function, which then invokes the <code>execve()</code> system call to load a user-level program---**init**{: style="color: red"}. The kernel looks for <code>init</code> in a few locations that have been historically used for it, but the proper location for it on a Linux system is <code>/sbin/init</code>. If the kernel cannot find <code>init</code>, it tries to run <code>/bin/sh</code>, and if that also fails, the startup of the system fails.
 
@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
 }
 ```
 
-The above program from Du (2019)[^6] asks the <code>execve()</code> function to execute the following shell command:
+The above program from Du (2019)[^7] asks the <code>execve()</code> function to execute the following shell command:
 
 ```console
 cat <filename>
@@ -328,7 +328,7 @@ The whole program code can be found [here](https://github.com/XingjianXuanyuan/C
 
 ## An Experiment on Program Execution after a <code>fork()</code>
 
-In this final section, I am concerned with how a Linux program executes after a <code>fork()</code>; which process is scheduled first, the parent or the child? The <code>spawn_children.c</code> program is modified from LPI, which uses <code>fork()</code> to create multiple children (the number of children spawned is user-specified) in a <code>for</code> loop. The whole program code can be found [here](https://github.com/XingjianXuanyuan/CSE422S-OperatingSystemsOrganization/blob/main/Src/Studio8/spawn_children.c). After each <code>fork()</code>, both parent and child print a message containing the loop counter value and a string indicating whether the process is the parent or child. For example, if we asked the program to produce two children, we might see the following (I was compiling on a macOS/x86-64 system):
+In this final section, I am concerned with how a program executes after a <code>fork()</code> on my Mac; which process is scheduled first, the parent or the child? The <code>spawn_children.c</code> program is modified from LPI, which uses <code>fork()</code> to create multiple children (the number of children spawned is user-specified) with a <code>for</code> loop. The whole program code can be found [here](https://github.com/XingjianXuanyuan/CSE422S-OperatingSystemsOrganization/blob/main/Src/Studio8/spawn_children.c). After each <code>fork()</code>, both parent and child print a message containing the loop counter value and a string indicating whether the process is the parent or child. For example, if we asked the program to produce two children, we might see the following (I was compiling on a macOS/x86-64 system):
 
 ```console
 $ gcc spawn_children.c -o spawn
@@ -345,7 +345,7 @@ We can run this program to create a large number of children. The output message
 ```console
 $ sudo chmod +x fork_whos_on_first.count.awk
 $ ./spawn 1000 > spawn_output.txt
-% ./fork_whos_on_first.count.awk spawn_output.txt 
+$ ./fork_whos_on_first.count.awk spawn_output.txt 
 All done
 parent    996  99.60%
 child       4   0.40%
@@ -377,4 +377,6 @@ For the case of $100,000$ children created, the execution time of the <code>spaw
 
 [^5]: Michael Kerrisk, *The Linux Programming Interface: A Linux and UNIX System Programming Handbook*, San Francisco: No Starch Press, 2010.
 
-[^6]: Wenliang Du, *Computer & Internet Security: A Hands-on Approach, Second Edition*, 2019.
+[^6]: *Base Specifications POSIX.1-2017*. The Open Group, San Francisco, CA, USA, 2018. URL http://pubs.opengroup.org/onlinepubs/9699919799/functions/fork.html. IEEE Std 1003.1-2017.
+
+[^7]: Wenliang Du, *Computer & Internet Security: A Hands-on Approach, Second Edition*, 2019.
