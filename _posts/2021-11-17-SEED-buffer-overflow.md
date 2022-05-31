@@ -8,6 +8,22 @@ For general overview and the setup package for this lab, please go to [SEED Labs
 
 <!-- excerpt-end -->
 
+Traditionally, UNIX systems associate with each process some *credentials*, which bind the process to a specific user and a specific user group.
+
+|---
+| Name | Description
+|:-|:-|:-|:-|:-
+| <code>uid</code>, <code>gid</code> | User and group real identifiers
+| <code>euid</code>, <code>egid</code> | User and group effective identifiers
+| <code>fsuid</code>, <code>fsgid</code> | User and group effective identifiers for file access
+| <code>groups</code> | Supplementary group identifiers
+| <code>suid</code>, <code>sgid</code> | User and group saved identifiers
+
+*Table 1: Traditional process credentials*[^1]
+{:.table-caption}
+
+A UID of 0 specifiers the superuser (root), while a user group ID of 0 specifies the root group. If a process credential stores a value of 0, the kernel bypasses the permission checks and allows the privileged process to perform various actions, such as those referring to system administration or hardware manipulation, that are not possible to unprivileged processes. When the process executes a *set-uid* program&mdash;that is, an executable file whose <code>setuid</code> flag is on&mdash;the <code>euid</code> and <code>fsuid</code> fields are set to the identifier of the file's owner. UNIX's long history teaches the lession that setuid programs are quite dangerous: malicious users could triggers some programming errors (bugs) in the code to force setuid programs to perform operations that were never planned by the program's original designers.
+
 <br />
 ## Table of Contents
 {:.no_toc}
@@ -23,7 +39,7 @@ Ubuntu and several other Linux-based systems uses address space randomization to
 $ sudo sysctl -w kernel.randomize_va_space=0
 ```
 
-The <code>dash</code> program, as well as <code>bash</code>, has implemented a security countermeasure that prevents itself from being executed in a Set-UID process[^1]. Basically, if they detect that they are executed in a Set-UID process, they will immediately change the effective user ID to the process's real user ID, essentially dropping the privilege. The following command can be used to link <code>/bin/sh</code> to <code>zsh</code> which does not have such a countermeasure:
+The <code>dash</code> program, as well as <code>bash</code>, has implemented a security countermeasure that prevents itself from being executed in a Set-UID process[^2]. Basically, if they detect that they are executed in a Set-UID process, they will immediately change the effective user ID to the process's real user ID, essentially dropping the privilege. The following command can be used to link <code>/bin/sh</code> to <code>zsh</code> which does not have such a countermeasure:
 
 ```console
 $ sudo ln -sf /bin/zsh /bin/sh
@@ -232,7 +248,7 @@ Breakpoint 1, bof (str=0xffffd1c3 "V\004") at stack.c:16
 16	{
 ```
 
-When <code>gdb</code> stops inside the <code>bof</code> function, it stops before the <code>%ebp</code> register is set to point to the current stack frame, so if we print out the value of <code>$ebp</code> here, we will get the caller's <code>$ebp</code> value. We need to use the <code>next</code> command[^2] to execute a few instructions and stop after the <code>%ebp</code> register is modified to point to the stack frame of the <code>bof</code> function.
+When <code>gdb</code> stops inside the <code>bof</code> function, it stops before the <code>%ebp</code> register is set to point to the current stack frame, so if we print out the value of <code>$ebp</code> here, we will get the caller's <code>$ebp</code> value. We need to use the <code>next</code> command[^3] to execute a few instructions and stop after the <code>%ebp</code> register is modified to point to the stack frame of the <code>bof</code> function.
 
 ```console
 gdb-peda$ next
@@ -785,6 +801,8 @@ done
 
 ## Notes
 
-[^1]: A privileged program is one that can give users extra privileges beyond that are already assigned to them. A Set-Root-UID program is a privileged program because it allows users to gain the root privilege during the execution of the programs. For Set-UID programs in UNIX and UNIX-like operating systems, which stands for **set user ID on execution**, the effective <code>uid</code> is the owner of the program, while the real <code>uid</code> is the user of the program. Windows does not have the notion of Set-UID. A different mechanism is used for implementing privileged functionality. A developer would write a privileged program as a service and the user sends the command line arguments to the service using Local Procedure Call.
+[^1]: See "Daniel P. Bovet and Marco Cesati, *Understanding the Linux Kernel, Third Edition*, O'Reilly, 2006."
 
-[^2]: Continue to the next source line in the current (innermost) stack frame. This is similar to <code>step</code>, but function calls that appear within the line of code are executed without stopping. Execution stops when control reaches a different line of code at the original stack level that was executing when you gave the <code>next</code> command.
+[^2]: A privileged program is one that can give users extra privileges beyond that are already assigned to them. A Set-Root-UID program is a privileged program because it allows users to gain the root privilege during the execution of the programs. For Set-UID programs in UNIX and UNIX-like operating systems, which stands for **set user ID on execution**, the effective <code>uid</code> is the owner of the program, while the real <code>uid</code> is the user of the program. Windows does not have the notion of Set-UID. A different mechanism is used for implementing privileged functionality. A developer would write a privileged program as a service and the user sends the command line arguments to the service using Local Procedure Call.
+
+[^3]: Continue to the next source line in the current (innermost) stack frame. This is similar to <code>step</code>, but function calls that appear within the line of code are executed without stopping. Execution stops when control reaches a different line of code at the original stack level that was executing when you gave the <code>next</code> command.
