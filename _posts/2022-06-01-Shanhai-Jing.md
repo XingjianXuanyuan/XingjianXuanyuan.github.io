@@ -21,4 +21,18 @@ For general overview and the setup package for this lab, please go to [SEED Labs
 
 [^1]: *王念孫*{:.underline}云：「《文選·頭陀寺碑文》注引無經字。」*珂*{:.underline}案：無經字是也，說見《海經新釋·卷一》篇首注1。
 
-[^2]: *郝懿行*{:.underline}云：「*任昉*{:.underline}《述異記》作雀山，《文選》」
+[^2]: *郝懿行*{:.underline}云：「*任昉*{:.underline}《述異記》作雀山，《文選》注*王巾*{:.underline}《頭陀寺碑》引此經作鵲山。」*珂*{:.underline}案：《太平御覽·卷五〇》引此經亦作鵲山；䧿，古鵲字。
+
+[^3]: *珂*{:.underline}案：華，古花字；*宋*{:.underline}本作花，下同此。
+
+[^4]: *珂*{:.underline}案：經文如穀與下文其名曰迷穀之穀，*宋*{:.underline}本均作榖，是也。*郝懿行*{:.underline}云：「*陶宏景*{:.underline}注《本草經》云：*榖即今構樹是也；榖構同聲，故榖亦名構。*」
+
+[^5]: *珂*{:.underline}案：華，光華。
+
+[^6]: *王念孫*{:.underline}云：「《類聚·獸部》引作有獸人面，名曰狌狌。」*珂*{:.underline}案：狌狌即猩猩；關於猩猩之傳說，見《海經新釋·卷五》「狌狌知人名」節注2。
+
+[^7]: *郭璞*{:.underline}云：「麂音几。」行健：原字上鹿下旨。
+
+[^8]: *郭璞*{:.underline}云：「未詳。」
+
+[^9]: *郭璞*{:.underline}云：「瘕，蟲病也。」
